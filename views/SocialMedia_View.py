@@ -1,11 +1,19 @@
-def filter_data():
-    platform = input("Enter Platform: ")
-    brand = input("Enter Brand: ")
-    date = input("Date (Daily, Weekly, Monthly): ")
-    return platform, brand, date
+class SocialMediaView:
 
-def show_data(model):
-    print("This is your inputted Data")
-    print(model.platform)
-    print(model.brand)
-    print(model.date)
+    def format_response(self, model):
+        """
+        Receives a Model Object -> Returns a Dictionary
+        """
+        return {
+            "status": "success",
+            "meta": {
+                "platform_queried": model.platform,
+                "brand_queried": model.brand,
+                "timeframe": model.date
+            },
+            "statistics": {
+                "total_followers": model.followers,
+                "total_engagements": model.engagement,
+                "total_impressions": model.impressions
+            }
+        }

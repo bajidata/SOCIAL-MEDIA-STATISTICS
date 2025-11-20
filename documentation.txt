@@ -1,0 +1,11 @@
+1. Router:
+    - Endpoint of each request
+
+2. Controllers:
+    - handles router request to process data
+
+3. Models:
+    - handles the conenction to google sheets
+
+4. Views
+    - return a json data
