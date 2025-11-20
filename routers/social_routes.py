@@ -14,7 +14,7 @@ router = APIRouter(
 class StatsRequest(BaseModel):
     platform: str
     brand: str
-    date: str
+    range: str
 
 # Initialize your controller
 controller = SocialMedia_Controller()
@@ -35,29 +35,31 @@ async def get_stats(request: StatsRequest):
     yesterday = today - timedelta(days=1) # Yesterday Date
     first_day_of_month = today.replace(day=1) # First Date of Month
     yesterday_date = yesterday.strftime("%d-%m-%Y")
-    if request.date == "Daily":
-        date_range = [
-            (first_day_of_month + timedelta(days=i)).strftime("%d-%m-%Y")
-            for i in range((yesterday - first_day_of_month).days + 1)
-        ]
-    elif request.date == "Weekly":
-        start_date = yesterday - timedelta(days=6)
-        start_date = max(start_date, first_day_of_month)
 
-        date_range = [
-            (start_date + timedelta(days=i)).strftime("%d-%m-%Y")
-            for i in range((yesterday - start_date).days + 1)
-        ]
+    # we didnt do the process here
+    # if request.range == "daily":
+    #     date_range = [
+    #         (first_day_of_month + timedelta(days=i)).strftime("%d-%m-%Y")
+    #         for i in range((yesterday - first_day_of_month).days + 1)
+    #     ]
+    # elif request.range == "weekly":
+    #     start_date = yesterday - timedelta(days=6)
+    #     start_date = max(start_date, first_day_of_month)
+
+    #     date_range = [
+    #         (start_date + timedelta(days=i)).strftime("%d-%m-%Y")
+    #         for i in range((yesterday - start_date).days + 1)
+    #     ]
     
-    else:
-        date_range = [
-            (first_day_of_month + timedelta(days=i)).strftime("%d-%m-%Y")
-            for i in range((yesterday - first_day_of_month).days + 1)
-        ]
+    # else:
+    #     date_range = [
+    #         (first_day_of_month + timedelta(days=i)).strftime("%d-%m-%Y")
+    #         for i in range((yesterday - first_day_of_month).days + 1)
+    #     ]
 
     return controller.process_stats(
         platform=request.platform, 
         brand=request.brand,
         yesterday_date=yesterday_date, 
-        date=date_range
+        range=request.range
     )

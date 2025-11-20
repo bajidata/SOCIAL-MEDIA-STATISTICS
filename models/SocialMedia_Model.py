@@ -6,16 +6,24 @@ from config.loader import (
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 from google.oauth2.service_account import Credentials
+from calendar import monthrange
+from datetime import datetime, timedelta
+
 
 class SocialMedia_Model:
-    def __init__(self, platform, brand, yesterday_date, date):
+    def __init__(self, platform, brand, yesterday_date, range):
         self.platform = platform
-        self.brand = brand
+        self.brand = brand.upper()
         self.yesterday_date = yesterday_date
-        self.date = date
+        self.range = range
         self.followers = 10001
         self.engagement = 12212
         self.impressions = 343443
+
+        # Store data inside self
+        self.currency = []        # all values in column A
+        self.rows = []            # row objects with index + value
+        self.total_rows = 0
 
         self.scope = ["https://www.googleapis.com/auth/spreadsheets"]
         config_dict = {
@@ -34,39 +42,93 @@ class SocialMedia_Model:
         self.creds = Credentials.from_service_account_info(config_dict, scopes=self.scope)
         self.service = build("sheets", "v4", credentials=self.creds)
 
+    def number_to_column(self, n):
+        """Convert 1-based column number to Excel/Sheets letter(s)"""
+        result = ""
+        n+=2
+        original = n
+        while n > 0:
+            n, remainder = divmod(n - 1, 26)
+            result = chr(65 + remainder) + result
 
-    
+        # print(n)
+        print(original)
+        return result, original
+
     def analytics(self):
-        """Simulates getting data from a database"""
-        # we should process the sheet collection here
+        """Fetch Columns A:V, map B-V rows with title first, then descending date-value objects"""
+        
         sheet_id = TESTING_SHEET_ID
-        sheet_name = "Sheet2"
+        today = datetime.strptime(self.yesterday_date, "%d-%m-%Y")
+        days_in_month = monthrange(today.year, today.month)[1]  # 28–31
+        last_day_letter, corresponding_number = self.number_to_column(days_in_month + 1)  # +1 if first column is title
 
-        row_data = [
-                self.platform,
-                self.brand,
-                self.yesterday_date,
-                self.followers,
-                self.engagement,
-                self.impressions,
-        ]
+        range_a_v = f"{self.brand}!A:{last_day_letter}"  # columns A to V
 
-        body = {
-            "values": [row_data]
-        }
-        result = (
+        try:
+            result = (
                 self.service.spreadsheets()
                 .values()
-                .append(
-                    spreadsheetId=sheet_id,
-                    range=f"{sheet_name}!A1",
-                    valueInputOption="USER_ENTERED",
-                    insertDataOption="INSERT_ROWS",
-                    body=body,
-                )
+                .get(spreadsheetId=sheet_id, range=range_a_v)
                 .execute()
             )
 
+            raw = result.get("values", [])
+            normalized = [(row + [""]*corresponding_number)[:corresponding_number] for row in raw]
 
+            self.currency = []
+            self.rows = []
 
-        return self
+            today = datetime.strptime(self.yesterday_date, "%d-%m-%Y")
+
+            for i, row in enumerate(normalized):
+
+                value_a = row[0].strip()
+                # print(value_a)
+                if value_a == "":
+                    continue
+
+                self.currency.append(value_a)
+                sheet_index = i + 1
+
+                # Column B: title
+                title = row[1].strip() if len(row) > 1 else ""
+                print(title)
+                # Remaining numeric values
+                numeric_values = []
+                for val in row[2:]:
+                    val = val.strip()
+                    if val == "":
+                        continue
+                    try:
+                        numeric_values.append(int(val))
+                    except ValueError:
+                        numeric_values.append(val)
+
+                # Build label array: first object is title
+                label_objects = [{"title": title}]
+
+                # Then append descending date-value objects for numeric values
+                current_date = today
+                for val in numeric_values:
+                    label_objects.append({
+                        "date": current_date.strftime("%d/%m/%Y"),
+                        "value": val
+                    })
+                    current_date -= timedelta(days=1)
+
+                self.rows.append({
+                    "value": value_a,
+                    "index": sheet_index,
+                    "label": label_objects
+                })
+
+            self.total_rows = len(self.rows)
+            return self
+
+        except HttpError as error:
+            print(f"An error occurred while reading sheet: {error}")
+            self.currency = []
+            self.rows = []
+            self.total_rows = 0
+            return self
