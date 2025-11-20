@@ -1,0 +1,11 @@
+Criteria
+
+Date Guide: Use yesterday’s date as the reference.
+
+Overview
+    > Daily - Pull data for yesterday only.
+    > Weekly = Pull the total for the 7 days prior to yesterday, limited to the set date month (needs processing to compute total).
+    > Month = Monthly Data (Limit into Current Month set by date)
+
+
+Graph: Daily Dates (FirstDateMonth - Yesterday Date)

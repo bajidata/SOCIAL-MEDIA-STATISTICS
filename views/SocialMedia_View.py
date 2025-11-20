@@ -9,6 +9,7 @@ class SocialMediaView:
             "meta": {
                 "platform_queried": model.platform,
                 "brand_queried": model.brand,
+                "yesterday": model.yesterday_date,
                 "timeframe": model.date
             },
             "statistics": {
