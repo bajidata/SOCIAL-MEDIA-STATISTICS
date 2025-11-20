@@ -79,6 +79,10 @@ class SocialMedia_Model:
             self.currency = []
             self.rows = []
 
+            metrics_by_row = {}    # { "TOTAL FOLLOWERS": [...], "DAILY": [...], ... }
+            row_indices = {}       # track sheet index for each metric row
+            metric_titles = []     # preserve order
+
             today = datetime.strptime(self.yesterday_date, "%d-%m-%Y")
 
             for i, row in enumerate(normalized):
@@ -92,8 +96,15 @@ class SocialMedia_Model:
                 sheet_index = i + 1
 
                 # Column B: title
-                title = row[1].strip() if len(row) > 1 else ""
-                print(title)
+                TITLE_MAP = {
+                    "TOTAL FOLLOWERS": "total_followers",
+                    "TOTAL ENGAGEMENT": "total_engagement",
+                    "TOTAL IMPRESSIONS": "total_impressions"
+                }
+
+                raw_title = row[1].strip() if len(row) > 1 else ""
+                # print(raw_title)
+
                 # Remaining numeric values
                 numeric_values = []
                 for val in row[2:]:
@@ -106,21 +117,24 @@ class SocialMedia_Model:
                         numeric_values.append(val)
 
                 # Build label array: first object is title
-                label_objects = [{"title": title}]
+                # label_objects = [{"title": self.platform}]
+                label_objects = []
 
                 # Then append descending date-value objects for numeric values
                 current_date = today
                 for val in numeric_values:
+                    title = TITLE_MAP.get(raw_title.upper(), raw_title.lower().replace(" ", "_"))
                     label_objects.append({
                         "date": current_date.strftime("%d/%m/%Y"),
-                        "value": val
+                         title: val
                     })
                     current_date -= timedelta(days=1)
 
                 self.rows.append({
+                    "title": self.platform,
                     "value": value_a,
                     "index": sheet_index,
-                    "label": label_objects
+                    "data": label_objects
                 })
 
             self.total_rows = len(self.rows)
