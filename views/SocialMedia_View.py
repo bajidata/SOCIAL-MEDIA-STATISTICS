@@ -16,8 +16,6 @@ class SocialMediaView:
                 "length": model.total_rows
             },
             "statistics": {
-                "total_followers": model.followers,
-                "total_engagements": model.engagement,
-                "total_impressions": model.impressions
+                "data": model.statistic
             }
         }

@@ -9,3 +9,12 @@ Overview
 
 
 Graph: Daily Dates (FirstDateMonth - Yesterday Date)
+
+
+
+
+Statistics:
+
+Total Follower: latest Date Overview
+total_engagements: Latest Date
+total_impressions: Latest Date

@@ -16,13 +16,14 @@ class SocialMedia_Model:
         self.brand = brand.upper()
         self.yesterday_date = yesterday_date
         self.range = range
-        self.followers = 10001
-        self.engagement = 12212
-        self.impressions = 343443
-
+        self.followers = None
+        self.engagement = None
+        self.impressions = None
+        
         # Store data inside self
         self.currency = []        # all values in column A
-        self.rows = []            # row objects with index + value
+        self.rows = []
+        self.statistic = []            # row objects with index + value
         self.total_rows = 0
 
         self.scope = ["https://www.googleapis.com/auth/spreadsheets"]
@@ -57,7 +58,7 @@ class SocialMedia_Model:
 
     def analytics(self):
         """Fetch Columns A:V, map B-V rows with title first, then descending date-value objects"""
-        
+        suspended_value = ["PKR"]
         sheet_id = TESTING_SHEET_ID
         today = datetime.strptime(self.yesterday_date, "%d-%m-%Y")
         days_in_month = monthrange(today.year, today.month)[1]  # 28–31
@@ -75,61 +76,93 @@ class SocialMedia_Model:
 
             raw = result.get("values", [])
             normalized = [(row + [""]*corresponding_number)[:corresponding_number] for row in raw]
-
+            # print(normalized)
             self.currency = []
             self.rows = []
-
-            metrics_by_row = {}    # { "TOTAL FOLLOWERS": [...], "DAILY": [...], ... }
-            row_indices = {}       # track sheet index for each metric row
-            metric_titles = []     # preserve order
+            TITLE_MAP = {
+                "TOTAL FOLLOWERS": "total_followers",
+                "MONTHLY ENGAGEMENTS": "total_engagements",
+                "MONTHLY IMPRESSIONS": "total_impressions",
+            }
 
             today = datetime.strptime(self.yesterday_date, "%d-%m-%Y")
 
             for i, row in enumerate(normalized):
 
                 value_a = row[0].strip()
-                # print(value_a)
-                if value_a == "":
+                if value_a == "" or value_a.upper() in suspended_value:
                     continue
 
                 self.currency.append(value_a)
                 sheet_index = i + 1
 
-                # Column B: title
-                TITLE_MAP = {
-                    "TOTAL FOLLOWERS": "total_followers",
-                    "TOTAL ENGAGEMENT": "total_engagement",
-                    "TOTAL IMPRESSIONS": "total_impressions"
-                }
+                # row[1] = title of followers row
+                raw_title_followers = row[1].strip()
 
-                raw_title = row[1].strip() if len(row) > 1 else ""
-                # print(raw_title)
+                # Get engagement row (3 rows below)
+                if i + 3 >= len(normalized):
+                    continue
 
-                # Remaining numeric values
-                numeric_values = []
+                engagement_row = normalized[i + 3]
+                raw_title_engagement = engagement_row[1].strip()
+
+                if i + 6 >= len(normalized):
+                    continue
+
+                impression_row = normalized[i + 6]
+                raw_title_impression = impression_row[1].strip()
+
+                # --- MAP TITLES ---
+                title_followers = TITLE_MAP.get(raw_title_followers.upper(), raw_title_followers.lower().replace(" ", "_"))
+                title_engagement = TITLE_MAP.get(raw_title_engagement.upper(), raw_title_engagement.lower().replace(" ", "_"))
+                title_impression = TITLE_MAP.get(raw_title_impression.upper(), raw_title_impression.lower().replace(" ", "_"))
+
+
+                # --- NUMERIC VALUES ---
+
+                # Followers (row i)
+                numeric_followers = []
                 for val in row[2:]:
                     val = val.strip()
                     if val == "":
                         continue
-                    try:
-                        numeric_values.append(int(val))
-                    except ValueError:
-                        numeric_values.append(val)
+                    numeric_followers.append(int(val))
 
-                # Build label array: first object is title
-                # label_objects = [{"title": self.platform}]
+                # Monthly Engagement
+                numeric_engagements = []
+                for val in engagement_row[3:]:  
+                    val = val.strip()
+                    if val == "":
+                        continue
+                    numeric_engagements.append(int(val))
+
+                # Monthly Impression
+                numeric_impression = []
+                for val in impression_row[3:]:  
+                    val = val.strip()
+                    if val == "":
+                        continue
+                    numeric_impression.append(int(val))
+
+                # Ensure equal lengths
+                length = min(len(numeric_followers), len(numeric_engagements), len(numeric_impression))
+
+                # --- MERGE INTO LABEL OBJECTS ---
                 label_objects = []
-
-                # Then append descending date-value objects for numeric values
                 current_date = today
-                for val in numeric_values:
-                    title = TITLE_MAP.get(raw_title.upper(), raw_title.lower().replace(" ", "_"))
+
+                for idx in range(length):
                     label_objects.append({
                         "date": current_date.strftime("%d/%m/%Y"),
-                         title: val
+                        title_followers: numeric_followers[idx],
+                        title_engagement: numeric_engagements[idx],
+                        title_impression: numeric_impression[idx]
                     })
                     current_date -= timedelta(days=1)
+                    
+                
 
+                # Store
                 self.rows.append({
                     "title": self.platform,
                     "value": value_a,
@@ -138,6 +171,94 @@ class SocialMedia_Model:
                 })
 
             self.total_rows = len(self.rows)
+            yesterday_formatted = datetime.strptime(self.yesterday_date, "%d-%m-%Y").strftime("%d/%m/%Y")
+            # Get the date before yesterday
+            day_before_yesterday = datetime.strptime(self.yesterday_date, "%d-%m-%Y") - timedelta(days=1)
+            day_before_formatted = day_before_yesterday.strftime("%d/%m/%Y")
+
+            if self.range == "Monthly":
+                for platform in self.rows:
+                    for entry in platform['data']:
+                        if entry['date'] == yesterday_formatted:
+                            self.statistic.append({
+                                "platform": platform['title'],
+                                "Range": self.range,
+                                "value": platform['value'],
+                                "date": entry['date'],
+                                "followers": entry['total_followers'],
+                                "engagements": entry['total_engagements'],
+                                "impressions": entry['total_impressions']
+                            })
+                            break
+            
+            if self.range == "Daily":
+                for platform in self.rows:
+                    yesterday_data = None
+                    day_before_data = None
+
+                    for entry in platform['data']:
+                        if entry['date'] == yesterday_formatted:
+                            yesterday_data = entry
+                        elif entry['date'] == day_before_formatted:
+                            day_before_data = entry
+
+                    if yesterday_data and day_before_data:
+                        # Get values
+                        y_followers = yesterday_data['total_followers']
+                        y_engagements = yesterday_data['total_engagements']
+                        y_impressions = yesterday_data['total_impressions']
+
+                        prev_followers = day_before_data['total_followers']
+                        prev_engagements = day_before_data['total_engagements']
+                        prev_impressions = day_before_data['total_impressions']
+
+                        # Calculate daily difference
+                        followers_diff = y_followers - prev_followers
+                        engagement_diff = y_engagements - prev_engagements
+                        impressions_diff = y_impressions - prev_impressions
+
+                        # Append statistic
+                        self.statistic.append({
+                            "platform": platform['title'],
+                            "Range": self.range,
+                            "value": platform['value'],
+                            "date": f"{yesterday_formatted} - {day_before_formatted}",
+                            "followers": followers_diff,
+                            "engagements": engagement_diff,
+                            "impressions": impressions_diff
+                        })
+            if self.range == "Weekly":
+                for platform in self.rows:
+                    # Collect data for the last 7 days
+                    weekly_entries = []
+                    for entry in platform['data']:
+                        entry_date = datetime.strptime(entry['date'], "%d/%m/%Y")
+                        yesterday_dt = datetime.strptime(self.yesterday_date, "%d-%m-%Y")
+                        if 0 <= (yesterday_dt - entry_date).days < 7:
+                            weekly_entries.append(entry)
+
+                    if len(weekly_entries) >= 2:
+                        # Sort entries by date ascending (oldest first)
+                        weekly_entries.sort(key=lambda x: datetime.strptime(x['date'], "%d/%m/%Y"))
+
+                        first_day = weekly_entries[0]
+                        last_day = weekly_entries[-1]
+
+                        # Calculate difference between last day (yesterday) and first day (6 days before)
+                        followers_diff = last_day['total_followers'] - first_day['total_followers']
+                        engagement_diff = last_day['total_engagements'] - first_day['total_engagements']
+                        impressions_diff = last_day['total_impressions'] - first_day['total_impressions']
+
+                        # Append weekly statistic
+                        self.statistic.append({
+                            "platform": platform['title'],
+                            "Range": self.range,
+                            "value": platform['value'],
+                            "date": f"{first_day['date']} - {last_day['date']}",
+                            "followers": followers_diff,
+                            "engagements": engagement_diff,
+                            "impressions": impressions_diff
+                        })
             return self
 
         except HttpError as error:
