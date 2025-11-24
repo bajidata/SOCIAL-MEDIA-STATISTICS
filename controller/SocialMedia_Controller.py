@@ -10,7 +10,7 @@ class SocialMedia_Controller():
         
         # handle the request input
         if platform.lower() == "facebook":
-            model = SocialMedia_Model(platform, brand, yesterday_date, range) # Passing the Variable as Parameters
+            model = SocialMedia_Model(platform, brand, yesterday_date, range)# Passing the Variable as Parameters
             model.analytics() # The returning
         
 
