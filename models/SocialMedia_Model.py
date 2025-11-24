@@ -238,8 +238,8 @@ class SocialMedia_Model:
                                 "value": platform['value'],
                                 "date": entry['date'],
                                 "followers": entry['total_followers'],
-                                "engagements": entry['total_engagements'],
-                                "impressions": entry['total_impressions']
+                                "engagements": entry['monthly_engagements'],
+                                "impressions": entry['monthly_impressions']
                             })
                             break
             
