@@ -9,8 +9,10 @@ class SocialMedia_Controller():
         # simulate input
         
         # handle the request input
-        model = SocialMedia_Model(platform, brand, yesterday_date, range)  # Passing the Variable as Parameters
-        model.analytics() # The returning
+        if platform.lower() == "facebook":
+            model = SocialMedia_Model(platform, brand, yesterday_date, range) # Passing the Variable as Parameters
+            model.analytics() # The returning
+        
 
         # Call the VIEW to format that model into a clean dictionary
         response_data = self.view.format_response(model)

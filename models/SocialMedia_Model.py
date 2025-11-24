@@ -12,10 +12,10 @@ from datetime import datetime, timedelta
 
 class SocialMedia_Model:
     def __init__(self, platform, brand, yesterday_date, range):
-        self.platform = platform.lower()
+        self.platform = platform
         self.brand = brand.lower()
         self.yesterday_date = yesterday_date
-        self.range = range
+        self.range = range.lower()
         self.followers = None
         self.engagement = None
         self.impressions = None
