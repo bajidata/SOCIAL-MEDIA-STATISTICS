@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Telegram Mini App</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        body { background: var(--tg-theme-bg-color); color: var(--tg-theme-text-color); }
+        .card {
+            padding: 20px; margin: 20px;
+            background: var(--tg-theme-secondary-bg-color);
+            border-radius: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h2>Hello from WebApp!</h2>
+        <p>This runs inside Telegram.</p>
+    </div>
+
+    <script>
+        const tg = window.Telegram.WebApp;
+
+        tg.expand(); // Expand full height
+        tg.MainButton.setText("Close");
+        tg.MainButton.show();
+        tg.MainButton.onClick(() => tg.close());
+    </script>
+</body>
+</html>
