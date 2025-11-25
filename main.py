@@ -1,5 +1,3 @@
-
-#we used router to provide access on the controller MVC
 import uvicorn
 from fastapi import FastAPI
 from routers import social_routes

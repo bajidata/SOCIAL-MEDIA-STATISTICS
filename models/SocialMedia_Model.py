@@ -53,7 +53,6 @@ class SocialMedia_Model:
             result = chr(65 + remainder) + result
 
         # print(n)
-        print(original)
         return result, original
 
     def analytics(self):

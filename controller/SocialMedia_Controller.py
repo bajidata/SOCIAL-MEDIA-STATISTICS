@@ -7,15 +7,18 @@ class SocialMedia_Controller():
 
     def process_stats(self, platform: str, brand: str, yesterday_date: str, range: str):
         # simulate input
-        
+        print("backend API Processing")
         # handle the request input
         if platform.lower() == "facebook":
+            
             model = SocialMedia_Model(platform, brand, yesterday_date, range)# Passing the Variable as Parameters
             model.analytics() # The returning
         
 
         # Call the VIEW to format that model into a clean dictionary
         response_data = self.view.format_response(model)
+
+        print("Backend Done Processing..")
 
         # Return the dictionary to the Router
         return response_data
