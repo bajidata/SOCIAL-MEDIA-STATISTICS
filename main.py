@@ -1,13 +1,27 @@
 import uvicorn
+import asyncio
 from fastapi import FastAPI
-from routers import social_routes
+from fastapi.staticfiles import StaticFiles
 
-# Initialize the App
+from routers import social_routes
+from controller.core import base_router
+
+# Import bot module
+from bot.telegram_bot import run_telegram_bot   # <-- HERE
+
+
 app = FastAPI(title="Social Media Statistics API")
 
-# Include the router we created in Step 2
+app.include_router(base_router.router)
 app.include_router(social_routes.router)
 
-# This allows you to run the file directly with `python main.py`
+app.mount("/static", StaticFiles(directory="static"), name="static")
+
+
+@app.on_event("startup")
+async def startup_event():
+    asyncio.create_task(run_telegram_bot())   # run bot in background
+
+
 if __name__ == "__main__":
     uvicorn.run("main:app", host="127.0.0.1", port=8000, reload=True)
