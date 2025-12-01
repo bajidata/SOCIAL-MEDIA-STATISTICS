@@ -14,7 +14,7 @@ router = APIRouter(
 class StatsRequest(BaseModel):
     platform: str
     brand: str
-    range: str
+    # range: str
 
 # Initialize your controller
 controller = SocialMedia_Controller()
@@ -41,5 +41,5 @@ async def get_stats(request: StatsRequest):
         platform=request.platform, 
         brand=request.brand,
         yesterday_date=yesterday_date, 
-        range=request.range
+        # range=request.range
     )

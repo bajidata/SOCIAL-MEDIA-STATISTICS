@@ -10,7 +10,7 @@ class SocialMediaView:
                 "platform_queried": model.platform,
                 "brand_queried": model.brand,
                 "yesterday": model.yesterday_date,
-                "timeframe": model.range,
+                # "timeframe": model.range,
                 "row": model.rows,
                 "column_a": model.currency,
                 "length": model.total_rows

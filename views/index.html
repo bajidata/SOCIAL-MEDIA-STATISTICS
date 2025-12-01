@@ -24,6 +24,10 @@
             }
         }
     </script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/nouislider@15.7.0/dist/nouislider.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/nouislider@15.7.0/dist/nouislider.min.js"></script>
+
+    
 </head>
 
 <body class="bg-limeLight text-limeDark p-5">
@@ -58,7 +62,7 @@
                 <label class="block font-semibold mb-1">Range</label>
                 <select id="range"
                         class="w-full px-4 py-2 border border-limeMain rounded-lg bg-white focus:ring-2 focus:ring-limeMain focus:outline-none">
-                    <option value="Daily">Daily</option>
+                    <option value="daily">Daily</option>
                     <option value="Weekly">Week</option>
                     <option value="monthly">Monthly</option>
                 </select>
@@ -75,39 +79,51 @@
         </form>
     </div>
     <div id="rangeButtons" class="flex justify-center gap-2 mb-3 hidden">
-        <button id="btnDaily" class="px-3 py-2 bg-limeMain text-white rounded">Daily</button>
-        <button id="btnWeekly" class="px-3 py-2 bg-limeMain text-white rounded">Weekly</button>
-        <button id="btnMonthly" class="px-3 py-2 bg-limeMain text-white rounded">Monthly</button>
+        <button id="btnFollowers" class="px-3 py-2 bg-limeMain text-white rounded">Followers</button>
+        <button id="btnEngagement" class="px-3 py-2 bg-limeMain text-white rounded">Engagement</button>
+        <button id="btnImpression" class="px-3 py-2 bg-limeMain text-white rounded">Impression</button>
     </div>
 
- 
     <template id="statsCardTemplate">
-    <div class="bg-white p-5 rounded-xl shadow border border-limeMain/30 stats-card">
-        <div class="flex justify-between items-center mb-4">
-            <h1 class="text-xl sm:text-2xl font-bold text-limeDark card-title"></h1>
-            <span class="text-gray-600 text-sm sm:text-base card-range"></span>
-        </div>
+        <div class="bg-white p-5 rounded-xl shadow border border-limeMain/30 stats-card">
+            <div class="flex justify-between items-center mb-4">
+                <h1 class="text-xl sm:text-2xl font-bold text-limeDark card-title"></h1>
+                <span class="text-gray-600 text-sm sm:text-base card-range"></span>
+            </div>
 
-        <div class="grid grid-cols-3 gap-3 mb-4">
-            <div class="bg-limeLight p-3 rounded-lg text-center shadow">
-                <p class="text-limeDark text-base sm:text-lg md:text-xl lg:text-xl font-bold card-followers-gain"></p>
-                <p class="text-gray-600 text-xs sm:text-sm font-semibold mt-1">Followers Gain</p>
+            <div class="grid grid-cols-3 gap-3 mb-4">
+                <div class="bg-limeLight p-3 rounded-lg text-center shadow">
+                    <p class="text-limeDark text-base sm:text-lg md:text-xl lg:text-xl font-bold card-followers-gain"></p>
+                    <p class="text-gray-600 text-xs sm:text-sm font-semibold mt-1">Followers Gain</p>
+                </div>
+                <div class="bg-limeLight p-3 rounded-lg text-center shadow">
+                    <p class="text-limeDark text-base sm:text-lg md:text-xl lg:text-xl font-bold card-engagement-gain"></p>
+                    <p class="text-gray-600 text-xs sm:text-sm font-semibold mt-1">Engagement Gain</p>
+                </div>
+                <div class="bg-limeLight p-3 rounded-lg text-center shadow">
+                    <p class="text-limeDark text-base sm:text-lg md:text-xl lg:text-xl font-bold card-impressions-gain"></p>
+                    <p class="text-gray-600 text-xs sm:text-sm font-semibold mt-1">Impressions Gain</p>
+                </div>
             </div>
-            <div class="bg-limeLight p-3 rounded-lg text-center shadow">
-                <p class="text-limeDark text-base sm:text-lg md:text-xl lg:text-xl font-bold card-impressions-gain"></p>
-                <p class="text-gray-600 text-xs sm:text-sm font-semibold mt-1">Impressions Gain</p>
+            <h1 class="chart-title text-center text-lg font-bold text-limeDark mb-2">Total Followers</h1>
+
+            <div class="h-48">
+                <canvas class="statsChart"></canvas>
             </div>
-            <div class="bg-limeLight p-3 rounded-lg text-center shadow">
-                <p class="text-limeDark text-base sm:text-lg md:text-xl lg:text-xl font-bold card-engagement-gain"></p>
-                <p class="text-gray-600 text-xs sm:text-sm font-semibold mt-1">Engagement Gain</p>
-            </div>
+            <div class="date-slider mt-4"></div>
+            <p class="text-xs text-gray-700 mt-2 text-center slider-range-label"></p>
         </div>
-    </div>
-</template>
+    </template>
 
 
     <div id="multiCurrencyStats" class="space-y-4"></div>
+    
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<!-- Your scripts after Chart.js -->
 <script src="/static/filter.js"></script>
 <script src="/static/script.js"></script>
+
 </body>
 </html>

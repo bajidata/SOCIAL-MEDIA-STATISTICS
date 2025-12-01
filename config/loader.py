@@ -26,9 +26,9 @@ TOKEN = os.getenv("TOKEN")
 CHANNEL_ID = os.getenv("CHANNEL_ID")
 
 # ACCOUNT_SHEET_ID = os.getenv("ACCOUNT_SHEET_ID", "")
-# FB_GAINED_SHEET_ID = os.getenv("FB_GAINED_SHEET_ID", "")
-# IG_GAINED_SHEET_ID = os.getenv("IG_GAINED_SHEET_ID", "")
-# YT_GAINED_SHEET_ID = os.getenv("YT_GAINED_SHEET_ID", "")
-# TW_GAINED_SHEET_ID = os.getenv("TW_GAINED_SHEET_ID", "")
+FB_GAINED_SHEET_ID = os.getenv("FB_GAINED_SHEET_ID", "")
+IG_GAINED_SHEET_ID = os.getenv("IG_GAINED_SHEET_ID", "")
+YT_GAINED_SHEET_ID = os.getenv("YT_GAINED_SHEET_ID", "")
+TW_GAINED_SHEET_ID = os.getenv("TW_GAINED_SHEET_ID", "")
 
 TESTING_SHEET_ID = os.getenv("TESTING_SHEET_ID", "")

@@ -5,13 +5,13 @@ class SocialMedia_Controller():
     def __init__(self):
         self.view = SocialMediaView()
 
-    def process_stats(self, platform: str, brand: str, yesterday_date: str, range: str):
+    def process_stats(self, platform: str, brand: str, yesterday_date: str):
         # simulate input
         print("backend API Processing")
         # handle the request input
         if platform.lower() == "facebook":
             
-            model = SocialMedia_Model(platform, brand, yesterday_date, range)# Passing the Variable as Parameters
+            model = SocialMedia_Model(platform, brand, yesterday_date)# Passing the Variable as Parameters
             model.analytics() # The returning
         
 

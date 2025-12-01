@@ -1,7 +1,7 @@
 from config.loader import (
     TYPE, PROJECT_ID, PRIVATE_KEY_ID, PRIVATE_KEY, CLIENT_EMAIL, CLIENT_ID,
     AUTH_URI, TOKEN_URI, AUTH_PROVIDER_X509_CERT_URL, CLIENT_X509_CERT_URL, UNIVERSE_DOMAIN,
-    TESTING_SHEET_ID
+    FB_GAINED_SHEET_ID, TESTING_SHEET_ID
 )
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
@@ -11,19 +11,19 @@ from datetime import datetime, timedelta
 
 
 class SocialMedia_Model:
-    def __init__(self, platform, brand, yesterday_date, range):
+    def __init__(self, platform, brand, yesterday_date):
         self.platform = platform
         self.brand = brand.lower()
         self.yesterday_date = yesterday_date
-        self.range = range.lower()
+        # self.range = range.lower()
         self.followers = None
         self.engagement = None
         self.impressions = None
         
         # Store data inside self
-        self.currency = []        # all values in column A
+        self.currency = [] # all values in column A
         self.rows = []
-        self.statistic = []            # row objects with index + value
+        self.statistic = [] # row objects with index + value
         self.total_rows = 0
 
         self.scope = ["https://www.googleapis.com/auth/spreadsheets"]
@@ -46,38 +46,52 @@ class SocialMedia_Model:
     def number_to_column(self, n):
         """Convert 1-based column number to Excel/Sheets letter(s)"""
         result = ""
-        n+=2
+        n += 2
         original = n
         while n > 0:
             n, remainder = divmod(n - 1, 26)
             result = chr(65 + remainder) + result
-
-        # print(n)
         return result, original
 
     def analytics(self):
-        """Fetch Columns A:V, map B-V rows with title first, then descending date-value objects"""
-        suspended_value = ["PKR"]
-        sheet_id = TESTING_SHEET_ID
-        today = datetime.strptime(self.yesterday_date, "%d-%m-%Y")
-        days_in_month = monthrange(today.year, today.month)[1]  # 28–31
-        last_day_letter, corresponding_number = self.number_to_column(days_in_month + 1)  # +1 if first column is title
+        """Fetch columns and map B-V rows with title, handle missing dates by filling 0"""
+        if self.brand == "jeetbuzz":
+            suspended_value = ["BDT", "PKR", "INR", "FACEBOOK NEW. INSTAGRAM ACCOUNT"]
+        elif self.brand == "six6s":
+            suspended_value = []
+        elif self.brand == "badsha":
+            suspended_value = []
+        else:
+            suspended_value = []
 
-        range_a_v = f"{self.brand}!A:{last_day_letter}"  # columns A to V
+        sheet_id = FB_GAINED_SHEET_ID
+        today = datetime.strptime(self.yesterday_date, "%d-%m-%Y")
+        days_in_month = monthrange(today.year, today.month)[1]
+        last_day_letter, corresponding_number = self.number_to_column(days_in_month + 1)
+        range_a_v = f"{self.brand}!A:{last_day_letter}"
+
+        def safe_int(val):
+            """Convert to int if possible, else return 0"""
+            val = val.strip()
+            if val == "":
+                return 0
+            try:
+                return int(val)
+            except ValueError:
+                return 0
 
         try:
-            result = (
-                self.service.spreadsheets()
-                .values()
-                .get(spreadsheetId=sheet_id, range=range_a_v)
-                .execute()
-            )
+            result = self.service.spreadsheets().values().get(
+                spreadsheetId=sheet_id,
+                range=range_a_v
+            ).execute()
 
             raw = result.get("values", [])
-            normalized = [(row + [""]*corresponding_number)[:corresponding_number] for row in raw]
-            # print(normalized)
+            normalized = [(row + [""] * corresponding_number)[:corresponding_number] for row in raw]
+
             self.currency = []
             self.rows = []
+
             TITLE_MAP = {
                 "TOTAL FOLLOWERS": "total_followers",
                 "DAILY FOLLOWERS GAIN": "daily_followers_gain",
@@ -87,10 +101,10 @@ class SocialMedia_Model:
                 "DAILY IMPRESSIONS": "daily_impressions"
             }
 
-            today = datetime.strptime(self.yesterday_date, "%d-%m-%Y")
+            date_headers = [d.strip().lstrip("'") for d in normalized[0][3:]]  # first row has dates
+            sheet_date_to_index = {date_headers[idx]: idx for idx in range(len(date_headers)) if date_headers[idx] != ""}
 
             for i, row in enumerate(normalized):
-
                 value_a = row[0].strip()
                 if value_a == "" or value_a.upper() in suspended_value:
                     continue
@@ -98,38 +112,29 @@ class SocialMedia_Model:
                 self.currency.append(value_a)
                 sheet_index = i + 1
 
-                # row[1] = title of followers row
+                # Map row titles
                 raw_title_followers = row[1].strip()
-                if i + 1 >= len(normalized):
-                    continue
+                if i + 1 >= len(normalized): continue
                 daily_followers_gain_row = normalized[i + 1]
                 raw_title_daily_followers = daily_followers_gain_row[1].strip()
 
-
-
-                # Get engagement row (3 rows below)
-                if i + 3 >= len(normalized):
-                    continue
+                if i + 3 >= len(normalized): continue
                 engagement_row = normalized[i + 3]
                 raw_title_engagement = engagement_row[1].strip()
 
-                if i + 2 >= len(normalized):
-                    continue
+                if i + 2 >= len(normalized): continue
                 daily_engagement_row = normalized[i + 2]
                 raw_title_daily_engagement = daily_engagement_row[1].strip()
 
-
-                if i + 6 >= len(normalized):
-                    continue
+                if i + 6 >= len(normalized): continue
                 impression_row = normalized[i + 6]
                 raw_title_impression = impression_row[1].strip()
 
-                if i + 5 >= len(normalized):
-                    continue
+                if i + 5 >= len(normalized): continue
                 daily_impression_row = normalized[i + 5]
                 raw_title_daily_impression = daily_impression_row[1].strip()
 
-                # --- MAP TITLES ---
+                # Map titles to keys
                 title_followers = TITLE_MAP.get(raw_title_followers)
                 title_daily_followers = TITLE_MAP.get(raw_title_daily_followers)
                 title_engagement = TITLE_MAP.get(raw_title_engagement)
@@ -137,83 +142,31 @@ class SocialMedia_Model:
                 title_impression = TITLE_MAP.get(raw_title_impression)
                 title_daily_impression = TITLE_MAP.get(raw_title_daily_impression)
 
+                # --- SAFE NUMERIC PARSING ---
+                numeric_followers = [safe_int(x) for x in row[3:]]
+                numeric_daily_followers = [safe_int(x) for x in daily_followers_gain_row[3:]]
+                numeric_engagements = [safe_int(x) for x in engagement_row[3:]]
+                numeric_daily_engagements = [safe_int(x) for x in daily_engagement_row[3:]]
+                numeric_impressions = [safe_int(x) for x in impression_row[3:]]
+                numeric_daily_impressions = [safe_int(x) for x in daily_impression_row[3:]]
 
-
-                # --- NUMERIC VALUES ---
-
-                # Followers (row i)
-                numeric_followers = []
-                for val in row[2:]:
-                    val = val.strip()
-                    if val == "":
-                        continue
-                    numeric_followers.append(int(val))
-                
-                numeric_daily_followers_gain = []
-                for val in daily_followers_gain_row[2:]:
-                    val = val.strip()
-                    if val == "":
-                        continue
-                    numeric_daily_followers_gain.append(int(val))
-
-                # Monthly Engagement
-                numeric_engagements = []
-                for val in engagement_row[3:]:  
-                    val = val.strip()
-                    if val == "":
-                        continue
-                    numeric_engagements.append(int(val))
-
-                # Daily Engagement
-                numeric_daily_engagements = []
-                for val in daily_engagement_row[2:]:  
-                    val = val.strip()
-                    if val == "":
-                        continue
-                    numeric_daily_engagements.append(int(val))
-
-                # Monthly Impression
-                numeric_impression = []
-                for val in impression_row[3:]:  
-                    val = val.strip()
-                    if val == "":
-                        continue
-                    numeric_impression.append(int(val))
-                
-                numeric_daily_impression = []
-                for val in daily_impression_row[2:]:  
-                    val = val.strip()
-                    if val == "":
-                        continue
-                    numeric_daily_impression.append(int(val))
-
-                # Ensure equal lengths
-                length = min(
-                    len(numeric_followers), 
-                    len(numeric_daily_followers_gain), 
-                    len(numeric_engagements), 
-                    len(numeric_daily_engagements), 
-                    len(numeric_impression), 
-                    len(numeric_daily_impression)
-                )
-
-                # --- MERGE INTO LABEL OBJECTS ---
+                # --- CREATE DATA WITH DATES, FILL MISSING WITH 0 ---
                 label_objects = []
                 current_date = today
-
-                for idx in range(length):
+                for _ in range(len(date_headers)):
+                    date_str = current_date.strftime("%d/%m/%Y")
+                    idx = sheet_date_to_index.get(date_str, None)
                     label_objects.append({
-                        "date": current_date.strftime("%d/%m/%Y"),
-                        title_followers: numeric_followers[idx],
-                        title_daily_followers: numeric_daily_followers_gain[idx],
-                        title_daily_engagement: numeric_daily_engagements[idx],
-                        title_engagement: numeric_engagements[idx],
-                        title_daily_impression: numeric_daily_impression[idx],
-                        title_impression: numeric_impression[idx],                        
+                        "date": date_str,
+                        title_followers: numeric_followers[idx] if idx is not None and idx < len(numeric_followers) else 0,
+                        title_daily_followers: numeric_daily_followers[idx] if idx is not None and idx < len(numeric_daily_followers) else 0,
+                        title_daily_engagement: numeric_daily_engagements[idx] if idx is not None and idx < len(numeric_daily_engagements) else 0,
+                        title_engagement: numeric_engagements[idx] if idx is not None and idx < len(numeric_engagements) else 0,
+                        title_daily_impression: numeric_daily_impressions[idx] if idx is not None and idx < len(numeric_daily_impressions) else 0,
+                        title_impression: numeric_impressions[idx] if idx is not None and idx < len(numeric_impressions) else 0,
                     })
                     current_date -= timedelta(days=1)
 
-                # Store
                 self.rows.append({
                     "title": self.platform,
                     "value": value_a,
@@ -222,82 +175,6 @@ class SocialMedia_Model:
                 })
 
             self.total_rows = len(self.rows)
-            yesterday_formatted = datetime.strptime(self.yesterday_date, "%d-%m-%Y").strftime("%d/%m/%Y")
-            # Get the date before yesterday
-            day_before_yesterday = datetime.strptime(self.yesterday_date, "%d-%m-%Y") - timedelta(days=1)
-            day_before_formatted = day_before_yesterday.strftime("%d/%m/%Y")
-
-            if self.range == "monthly":
-                for platform in self.rows:
-                    for entry in platform['data']:
-                        if entry['date'] == yesterday_formatted:
-                            self.statistic.append({
-                                "platform": platform['title'],
-                                "Range": self.range,
-                                "value": platform['value'],
-                                "date": entry['date'],
-                                "followers": entry['total_followers'],
-                                "engagements": entry['monthly_engagements'],
-                                "impressions": entry['monthly_impressions']
-                            })
-                            break
-            
-            if self.range == "daily":
-                for platform in self.rows:
-                    yesterday_entry = None
-
-                    for entry in platform['data']:
-                        if entry['date'] == yesterday_formatted:
-                            yesterday_entry = entry
-                            break
-
-                    if yesterday_entry:
-                        self.statistic.append({
-                            "platform": platform['title'],
-                            "Range": self.range,
-                            "value": platform['value'],
-                            "date": yesterday_formatted,
-                            "followers": yesterday_entry.get("daily_followers_gain", 0),
-                            "engagements": yesterday_entry.get("daily_engagements", 0),
-                            "impressions": yesterday_entry.get("daily_impressions", 0)
-                        })
-            if self.range == "weekly":
-                for platform in self.rows:
-
-                    # Collect daily entries for last 7 days
-                    weekly_entries = []
-                    yesterday_dt = datetime.strptime(self.yesterday_date, "%d-%m-%Y")
-
-                    for entry in platform['data']:
-                        entry_date = datetime.strptime(entry['date'], "%d/%m/%Y")
-                        diff = (yesterday_dt - entry_date).days
-
-                        if 0 <= diff < 7:     # only last 7 days
-                            weekly_entries.append(entry)
-
-                    # Must have at least 1 day
-                    if weekly_entries:
-                        # Sum daily values
-                        total_followers = sum(e.get('daily_followers_gain', 0) for e in weekly_entries)
-                        total_engagements = sum(e.get('daily_engagements', 0) for e in weekly_entries)
-                        total_impressions = sum(e.get('daily_impressions', 0) for e in weekly_entries)
-
-                        # Get date range string
-                        weekly_entries.sort(key=lambda x: datetime.strptime(x['date'], "%d/%m/%Y"))
-                        first_day = weekly_entries[0]['date']
-                        last_day = weekly_entries[-1]['date']
-
-                        # Append result
-                        self.statistic.append({
-                            "platform": platform['title'],
-                            "Range": self.range,
-                            "value": platform['value'],
-                            "date": f"{first_day} - {last_day}",
-                            "followers": total_followers,
-                            "engagements": total_engagements,
-                            "impressions": total_impressions
-                        })
-
             return self
 
         except HttpError as error:
